@@ -11,7 +11,10 @@ import Default from '@astrojs/starlight/components/Head.astro';
     for (const block of blocks) {
       const target = document.createElement('div');
       target.className = 'mermaid';
-      target.textContent = block.querySelector('code')?.textContent || block.textContent;
+      const lines = block.querySelectorAll('.ec-line .code');
+      target.textContent = lines.length
+        ? Array.from(lines, (line) => line.textContent).join('\n')
+        : block.querySelector('code')?.textContent || block.textContent;
       const container = block.closest('.expressive-code') || block;
       container.replaceWith(target);
     }
