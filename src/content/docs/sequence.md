@@ -16,7 +16,7 @@ sequenceDiagram
 
     S->>P: Scheduled wake-up
     alt Agent cycle already active
-        P-->>S: Skip wake-up; do not queue
+        P-->>S: Skip wake-up, do not queue
     else No active cycle
         P->>P: Establish exclusive agent cycle
         P->>D: Execute with item limit
@@ -30,7 +30,7 @@ sequenceDiagram
             loop Each accepted work item
                 P->>P: Acquire internal item claim
                 opt Internal claim acquired and hook configured
-                    P->>C: acquire(item); attempt ID available
+                    P->>C: acquire(item), attempt ID available
                     C-->>P: Acquired with token and lease, busy, or failure
                 end
 
@@ -48,7 +48,7 @@ sequenceDiagram
                     end
                     P->>P: Release internal item claim
                 else Claim unavailable or acquisition failed
-                    P->>P: Skip item; release held internal claim
+                    P->>P: Skip item, release held internal claim
                 end
             end
         end
