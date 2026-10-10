@@ -9,7 +9,7 @@ export default defineConfig({
     description: 'A minimal execution contract for discover-and-run agents. Draft for review.',
     social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/elsell/agent-execution-spec' }],
     editLink: { baseUrl: 'https://github.com/elsell/agent-execution-spec/edit/main/' },
-    sidebar: [{ label: 'Specification', slug: '' }, { label: 'Sequence diagram', slug: 'sequence' }, { label: 'Unresolved details', slug: 'gaps' }],
+    sidebar: [{ label: 'Start here', slug: '' }, { label: 'Contract reference', slug: 'reference' }, { label: 'Sequence diagram', slug: 'sequence' }, { label: 'Unresolved details', slug: 'gaps' }],
     customCss: ['./src/styles/custom.css'],
     components: { Head: './src/components/Head.astro' },
   })],

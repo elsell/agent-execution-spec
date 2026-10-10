@@ -1,0 +1,119 @@
+---
+title: Build your first agent
+description: Run a complete two-script example, then read the execution contract.
+---
+
+import { Code } from '@astrojs/starlight/components';
+import discover from '../../../examples/uppercase/discover.sh?raw';
+import run from '../../../examples/uppercase/run.sh?raw';
+
+An agent is two scripts: **discover work, then handle one item**. You define what needs doing and make execution safe to repeat. The platform coordinates when and how your scripts run.
+
+:::note[Discussion draft]
+Start with the working example below, then read the [contract reference](./reference/) and [sequence diagram](./sequence/). [Unresolved details](./gaps/) remain open. This example illustrates the contract; its filenames, dependencies, and domain logic are not new specification requirements.
+:::
+
+## Run a complete example
+
+This agent turns `message.txt` into an uppercase file at `generated/MESSAGE.txt`. It discovers work only when that output is missing or differs from the desired result. Once handled, discovery returns nothing. Repeating the same run leaves the result unchanged.
+
+The example requires **Bash and Python 3**, with no additional packages, service accounts, or credentials. The files are included in [examples/uppercase](https://github.com/elsell/agent-execution-spec/tree/main/examples/uppercase).
+
+```text
+examples/uppercase/
+├── discover.sh
+├── run.sh
+└── message.txt
+```
+
+Run these commands from a terminal:
+
+```bash
+git clone https://github.com/elsell/agent-execution-spec.git
+cd agent-execution-spec/examples/uppercase
+
+# Discover first. Only continue if discovery exits successfully.
+items=$(bash discover.sh) && {
+  if [ -n "$items" ]; then
+    printf '%s\n' "$items" | bash run.sh
+  fi
+}
+
+cat generated/MESSAGE.txt
+
+# Once the output is correct, this prints nothing.
+bash discover.sh
+```
+
+The output file contains:
+
+```text
+HELLO, AGENTS!
+```
+
+The first run also emits this domain event on stderr:
+
+```text
+@agent {"event": "document.uppercased", "data": {"path": "generated/MESSAGE.txt"}}
+```
+
+This is a **local script demonstration**, not an orchestrator implementation. It has one possible work item and does not implement platform claims, scheduling, timeouts, or general discovery validation. It does not invent a wire format for supplying the discovery limit, which remains unresolved. Returning at most one item stays within any positive configured limit.
+
+## The complete scripts
+
+### Discover what is ready
+
+Discovery only reads files. It emits one envelope containing an opaque work ID and the text to process. This example chooses a content hash as its ID; the contract does not require that choice.
+
+<Code code={discover} lang="bash" title="discover.sh" />
+
+### Handle one item safely
+
+Execution receives that envelope on stdin. It exits successfully if the source has disappeared or changed since discovery, or if the desired output already exists. Otherwise it replaces the output through a temporary file and emits an event.
+
+<Code code={run} lang="bash" title="run.sh" />
+
+### Try a retry
+
+Change the input, discover once, and feed the same envelope to execution twice:
+
+```bash
+printf 'Another piece of work\n' > message.txt
+item=$(bash discover.sh) && {
+  printf '%s\n' "$item" | bash run.sh
+  printf '%s\n' "$item" | bash run.sh
+}
+cat generated/MESSAGE.txt
+bash discover.sh
+```
+
+The result is `ANOTHER PIECE OF WORK`. The second invocation has no additional effect, and subsequent discovery is empty. This demonstrates idempotency of the output; it does not promise exactly-once event delivery.
+
+The input and output here live in one local filesystem. The example does not assume that platform workers share a filesystem or that the platform persists local output. A deployed agent needs access to its actual work source and durable results through its execution environment. Concurrent edits to this sample input are outside the demonstration; platform environment and storage wiring remain unspecified.
+
+## What your agent needs to know
+
+| Surface | Developer contract |
+| --- | --- |
+| `discover.sh` | Read-only. Emit ready items as JSON lines on stdout, within the supplied limit. Send diagnostics to stderr. |
+| Work item | Required `id` string and `data` JSON value. You decide identity and payload meaning. |
+| `run.sh` | Read one envelope from stdin. Be idempotent and tolerate work becoming irrelevant. |
+| Exit status | Zero means handled, including nothing left to do. Nonzero means the attempt failed. |
+| Completion | Stop returning finished work. A previously successful ID may run again if discovery returns it. |
+| Domain events | Optionally write `@agent` followed by JSON with `event` and optional `data` to stderr. |
+| `agent.yaml` | Optional when the application supplies defaults; select a named image or override agreed settings. |
+| `claim.sh` | Optional external coordination. The platform always keeps its own internal claiming mechanism. |
+
+You do not need a custom claim hook to start. The platform validates discovery before execution, skips overlapping scheduled cycles, applies concurrency and timeout limits, and records outcomes. One failed run does not cancel the others.
+
+## Connect it to the platform
+
+An application identifies the repository, Git ref, agents directory, and runtime images. With an application default image, the directory containing `discover.sh` and `run.sh` is enough for automatic registration.
+
+If the application defines an image named `worker`, this optional file selects it:
+
+```yaml
+image: worker
+```
+
+For this example, that image would need Bash and Python 3. The full application schema and deployment wiring are deliberately not invented here. Continue to the [contract reference](./reference/) for the agreed behavior and [unresolved details](./gaps/) for what still needs a decision.

@@ -3,7 +3,9 @@
 Discussion draft defining the execution contract for agents exposing `discover.sh` and `run.sh`, with optional external claim hooks.
 
 - [Read the published specification](https://elsell.github.io/agent-execution-spec/)
-- [Specification source](src/content/docs/index.md)
+- [Developer guide](src/content/docs/index.mdx)
+- [Contract reference](src/content/docs/reference.md)
+- [Runnable example](examples/uppercase)
 - [Sequence diagram](src/content/docs/sequence.md)
 - [Unresolved details](src/content/docs/gaps.md)
 

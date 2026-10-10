@@ -1,10 +1,10 @@
 ---
-title: Agent execution specification
+title: Contract reference
 description: A minimal execution contract for discover-and-run agents.
 ---
 
 :::note[Draft for review]
-This draft contains only the behavior discussed. [Unresolved details](./gaps/) are listed separately. See the [sequence diagram](./sequence/) for the execution flow.
+This draft contains only the behavior discussed. [Unresolved details](../gaps/) are listed separately. See the [sequence diagram](../sequence/) for the execution flow.
 :::
 
 ## Purpose and scope
@@ -20,24 +20,6 @@ An agent provides:
 
 The platform handles scheduling, execution, internal claims, concurrency, timeouts, and observability. Credentials and environment provisioning are assumed to be supplied by the platform and are outside this initial specification. Cron is a possible implementation, not part of the contract.
 
-## Application and agent configuration
-
-An application corresponds to a repository and defines its repository reference, Git ref, agents directory, named container images, and default image.
-
-The platform recursively discovers agent directories containing `discover.sh` and `run.sh`. An agent can use the application’s default image without an `agent.yaml`.
-
-An optional `agent.yaml` can select a named application image:
-
-```yaml
-image: worker
-```
-
-The selected image runs the agent’s scripts.
-
-The application provides defaults for the discovery interval and `maxConcurrentRuns`. Agents can override either. `maxConcurrentRuns` limits both the number of items returned by discovery and the number of active runs within a cycle.
-
-Scripts execute with the agent directory as their working directory. Scripts for an attempt come from the same repository revision. The platform supplies agent identity and a unique attempt ID through environment variables; exact names remain unresolved.
-
 ## Work-item envelope
 
 ```json
@@ -52,16 +34,6 @@ Both fields are required:
 The developer determines work identity, including whether a revision belongs in the ID.
 
 A previously successful ID may run again if discovery returns it. Discovery indicates that work currently needs execution; the developer owns determining completion and stopping completed work from appearing.
-
-## Agent cycle and scheduling
-
-An agent cycle consists of discovery followed by execution of the accepted items.
-
-Only one cycle for an agent may be active at a time. The cycle stays active until its items have finished or been skipped and bounded cleanup has completed.
-
-A scheduled wake-up during an active cycle is skipped. It is not queued for later. After completion, the agent waits for its next scheduled wake-up.
-
-Different agents may have active cycles simultaneously.
 
 ## Discovery
 
@@ -94,6 +66,54 @@ The implementation must be idempotent and tolerate work becoming irrelevant befo
 Exit zero means the item was handled, including when nothing remains to do. A nonzero exit means the attempt failed.
 
 One failed or timed-out run does not cancel other runs in the cycle. Future discovery determines whether an item needs another attempt.
+
+## Events and logs
+
+Scripts may emit domain events to stderr using the agreed prefix:
+
+```text
+@agent {"event":"pull_request.opened","data":{"url":"https://..."}}
+```
+
+`event` is a required, developer-defined string. `data` is optional domain-specific JSON.
+
+The platform attaches timestamp, agent ID, work-item ID, and attempt ID where applicable. It also records execution started, succeeded, and failed events.
+
+These events support a common activity timeline and grouping by event name. The specification does not require progress percentages or interpretation of domain-specific event meaning.
+
+The platform captures execution logs subject to documented storage limits and retention periods, and makes retained logs available.
+
+A malformed prefixed event produces a platform warning event without failing execution. Ordinary text is not a parsing error. Malformed lines remain ordinary output subject to log limits.
+
+Truncation must be visible. Repeated parsing warnings may be combined. Structured events also have documented size and volume limits.
+
+## Application and agent configuration
+
+An application corresponds to a repository and defines its repository reference, Git ref, agents directory, named container images, and default image.
+
+The platform recursively discovers agent directories containing `discover.sh` and `run.sh`. An agent can use the application’s default image without an `agent.yaml`.
+
+An optional `agent.yaml` can select a named application image:
+
+```yaml
+image: worker
+```
+
+The selected image runs the agent’s scripts.
+
+The application provides defaults for the discovery interval and `maxConcurrentRuns`. Agents can override either. `maxConcurrentRuns` limits both the number of items returned by discovery and the number of active runs within a cycle.
+
+Scripts execute with the agent directory as their working directory. Scripts for an attempt come from the same repository revision. The platform supplies agent identity and a unique attempt ID through environment variables; exact names remain unresolved.
+
+## Agent cycle and scheduling
+
+An agent cycle consists of discovery followed by execution of the accepted items.
+
+Only one cycle for an agent may be active at a time. The cycle stays active until its items have finished or been skipped and bounded cleanup has completed.
+
+A scheduled wake-up during an active cycle is skipped. It is not queued for later. After completion, the agent waits for its next scheduled wake-up.
+
+Different agents may have active cycles simultaneously.
 
 ## Claims
 
@@ -190,23 +210,3 @@ These are configurable platform defaults; run timeout can be overridden per agen
 On timeout, the platform attempts termination and records failure. After the termination period, it forcibly terminates the relevant execution environment.
 
 Claims are retained during shutdown rather than deliberately released while execution is still terminating. Ownership may nevertheless expire or be lost.
-
-## Events and logs
-
-Scripts may emit domain events to stderr using the agreed prefix:
-
-```text
-@agent {"event":"pull_request.opened","data":{"url":"https://..."}}
-```
-
-`event` is a required, developer-defined string. `data` is optional domain-specific JSON.
-
-The platform attaches timestamp, agent ID, work-item ID, and attempt ID where applicable. It also records execution started, succeeded, and failed events.
-
-These events support a common activity timeline and grouping by event name. The specification does not require progress percentages or interpretation of domain-specific event meaning.
-
-The platform captures execution logs subject to documented storage limits and retention periods, and makes retained logs available.
-
-A malformed prefixed event produces a platform warning event without failing execution. Ordinary text is not a parsing error. Malformed lines remain ordinary output subject to log limits.
-
-Truncation must be visible. Repeated parsing warnings may be combined. Structured events also have documented size and volume limits.
