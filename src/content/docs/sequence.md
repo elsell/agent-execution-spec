@@ -3,21 +3,22 @@ title: Sequence diagram
 description: The agent cycle from a scheduled wake-up through discovery, claims, execution, and cleanup.
 ---
 
-This diagram shows the accepted discovery path and per-item processing. Failure behavior is defined in the specification. Items can execute concurrently; the loop represents each item's lifecycle rather than requiring serial execution.
+This diagram shows the accepted discovery path and per-item processing. The scheduler and execution wrapper are platform-owned; the agent scripts are developer-provided. The wrapper integrates with the platform’s event and log systems. Failure behavior is defined in the specification. Items can execute concurrently; the loop represents each item's lifecycle rather than requiring serial execution.
 
 ```mermaid
 sequenceDiagram
     participant S as Scheduler
-    participant P as Platform
+    participant P as Execution wrapper
     participant D as discover.sh
     participant C as claim.sh (optional)
     participant R as run.sh
     participant O as Events and logs
 
-    S->>P: Scheduled wake-up
+    Note over S,P: Scheduled wake-up, platform ensures cycle exclusivity
     alt Agent cycle already active
-        P-->>S: Skip wake-up, do not queue
+        S->>S: Skip wake-up, do not queue
     else No active cycle
+        S->>P: Invoke execution wrapper
         P->>P: Establish exclusive agent cycle
         P->>D: Execute with item limit
         D-->>P: JSON lines and exit status
@@ -36,7 +37,8 @@ sequenceDiagram
 
                 alt Required claims acquired
                     P->>R: Execute with envelope on stdin
-                    R->>O: Domain events and ordinary logs
+                    R-->>P: Domain events and ordinary logs
+                    P->>O: Capture through platform observability
                     Note over P,C: Renew applicable claims while run is active
                     Note over P,R: Timeout or ownership loss triggers termination
                     R-->>P: Execution ends

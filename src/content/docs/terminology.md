@@ -5,9 +5,19 @@ description: Shared language for applications, agents, cycles, work items, and t
 
 An **application** groups repository configuration and agents. An **agent** is the developer-provided bundle of scripts and optional configuration. An **agent cycle** is one scheduled invocation of discovery followed by processing its accepted work items.
 
-:::note[Naming discussion]
-The definitions below describe concepts already discussed. **Orchestrator** is the proposed name for the platform role that manages applications and coordinates agent execution. It is not yet a settled replacement for “platform” in the contract. This page introduces no new execution requirements or required components.
-:::
+## Platform-owned components
+
+| Term | Meaning in this specification |
+| --- | --- |
+| **Scheduler** | The platform-owned component responsible for when an agent cycle is triggered. It invokes the execution wrapper. Scheduling may use cron, a Go program, a Windows service, or another implementation. |
+| **Execution wrapper** | The platform-owned component invoked by the scheduler to execute an agent cycle. It calls `discover.sh`, validates discovery output, coordinates claims and concurrent `run.sh` invocations, applies timeouts and cleanup, and integrates with platform events, logging, and retention. |
+| **Platform** | The broader system that provides the scheduler, execution wrapper, and supporting capabilities. |
+
+**Execution wrapper** is the term used throughout this specification. “Run harness” describes the same role, rather than another component. The wrapper is supplied by the platform; the developer supplies the agent scripts that it invokes.
+
+These are distinct responsibilities, not a requirement for separate services, processes, or executables. A wrapper script is one possible implementation. The scheduling technology and the wrapper's implementation language remain unspecified.
+
+The relationship is: **scheduler → execution wrapper → developer-provided agent scripts**. The wrapper carries out a cycle; it is not the agent definition or an individual `run.sh` invocation.
 
 ## Application, agent, and cycle
 
@@ -25,23 +35,6 @@ The definitions below describe concepts already discussed. **Orchestrator** is t
 The useful distinction is **definition versus execution**: an agent is what the developer supplies; a cycle is one time that agent wakes up; a run handles one item inside that cycle. A later attempt can handle the same work-item ID again.
 
 Prefer “start an agent cycle” over “start an agent” when describing scheduling. Prefer “run a work item” when describing `run.sh`.
-
-## What should we call the component that runs it?
-
-**Proposed: orchestrator.** It names the role that manages application configuration and coordinates the already-agreed execution behavior: wake-ups, discovery, validation, claims, runs, timeouts, cleanup, and recording outcomes.
-
-The role may be implemented by multiple processes or services. Choosing this name does not require one central process or decide the platform’s architecture.
-
-| Candidate | When the name fits | Recommendation for this draft |
-| --- | --- | --- |
-| **Orchestrator** | Coordinating multiple operations through an execution lifecycle. | Proposed name for the role that coordinates agent cycles. |
-| **Controller** | Observing actual state and taking action to reconcile it with desired state. | Appropriate if an implementation uses a reconciliation loop to manage applications or their execution resources. |
-| **Scheduler** | Determining when work should start. | Keep this name for the wake-up responsibility; it does not describe the whole lifecycle. |
-| **Platform** | The broader system providing execution and its surrounding capabilities. | Retain the current contract term while the narrower name is being discussed. |
-
-“Controller” is not incorrect, and there is no universally mandatory name. In the Kubernetes sense, a controller reconciles current and desired state; merely calling scripts does not establish that design. See the [Kubernetes controller documentation](https://kubernetes.io/docs/concepts/architecture/controller/). This is background for the naming discussion, not a Kubernetes dependency.
-
-An implementation could have an application controller as part of its orchestrator. We do not need to prescribe that split to define the script contract. Here, “manages an application” describes responsibility, not an API ownership field or a decision about where configuration is stored.
 
 ## Discovery has two meanings
 
@@ -67,6 +60,6 @@ An internal claim is distinct from exclusive ownership of the whole agent cycle.
 
 ## Example of the language
 
-> An application points to a repository containing an uppercase agent. On a scheduled wake-up, the platform starts an agent cycle. Work discovery returns the item `message`. The platform acquires its internal claim, invokes `run.sh`, records the attempt’s outcome, and releases the claim. The cycle ends when its work and cleanup have settled.
+> An application points to a repository containing an uppercase agent. On a scheduled wake-up, the scheduler invokes the execution wrapper to carry out an agent cycle. The wrapper calls `discover.sh`, which returns the item `message`. The wrapper validates discovery output, acquires the internal claim, invokes `run.sh`, records the attempt's outcome through the platform's observability systems, and releases the claim. The cycle ends when its work and cleanup have settled.
 
-If we adopt the proposed name, “the orchestrator” can replace “the platform” where we mean that execution-coordination role specifically.
+The platform ensures that a scheduled wake-up during an active cycle is skipped without queueing a later cycle. These names do not change that guarantee or resolve the open questions about cycle recovery.
