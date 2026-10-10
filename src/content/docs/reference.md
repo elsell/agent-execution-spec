@@ -20,13 +20,13 @@ An agent provides:
 
 The platform handles scheduling, execution, internal claims, concurrency, timeouts, and observability. Credentials and environment provisioning are assumed to be supplied by the platform and are outside this initial specification. Cron is a possible implementation, not part of the contract.
 
-### Scheduler and execution wrapper
+### Scheduler and harness
 
-The **scheduler** is the platform-owned component that triggers agent cycles. It invokes the **execution wrapper**, also platform-owned, which calls the developer-provided agent scripts and carries out the cycle's execution contract.
+The **scheduler** is the platform-owned component that triggers agent cycles. It invokes the **harness**, also platform-owned, which calls the developer-provided agent scripts and carries out the cycle's execution contract.
 
-The wrapper handles discovery invocation and validation, work-item claims, concurrent runs, timeouts, cleanup, and integration with platform logging, retention, and observability. The scheduler determines when to trigger a cycle. Cron, a Go program, and a Windows service are possible scheduling implementations; the specification does not require a particular technology or separate processes for these roles.
+The harness handles discovery invocation and validation, work-item claims, concurrent runs, timeouts, cleanup, and integration with platform logging, retention, and observability. The scheduler determines when to trigger a cycle. Cron, a Go program, and a Windows service are possible scheduling implementations; the specification does not require a particular technology or separate processes for these roles.
 
-The developer supplies the agent, not the execution wrapper. See [terminology](../terminology/) for the shared definitions.
+The developer supplies the agent, not the harness. See [terminology](../terminology/) for the shared definitions.
 
 
 ## Work-item envelope
@@ -48,11 +48,11 @@ A previously successful ID may run again if discovery returns it. Discovery indi
 
 `discover.sh` is read-only with respect to the work.
 
-The execution wrapper supplies a limit equal to `maxConcurrentRuns`. Discovery returns no more than that many items that appear ready to execute, based on the information available to it.
+The harness supplies a limit equal to `maxConcurrentRuns`. Discovery returns no more than that many items that appear ready to execute, based on the information available to it.
 
 Discovery writes newline-delimited JSON to stdout: one work-item envelope per line. No work means empty stdout. Diagnostic logs go to stderr.
 
-The execution wrapper reads the complete output and requires a successful exit before accepting any items. Streaming execution is not specified.
+The harness reads the complete output and requires a successful exit before accepting any items. Streaming execution is not specified.
 
 The entire discovery attempt is rejected if:
 
@@ -62,7 +62,7 @@ The entire discovery attempt is rejected if:
 - An ID repeats.
 - The item count exceeds the supplied limit.
 
-No items run from rejected discovery output. The execution wrapper records the failure. The agent waits for the next scheduled cycle.
+No items run from rejected discovery output. The harness records the failure. The agent waits for the next scheduled cycle.
 
 Readiness may change after discovery. Claims provide the subsequent ownership check. Items that cannot be claimed are skipped without fetching replacements during that cycle.
 
@@ -86,7 +86,7 @@ Scripts may emit domain events to stderr using the agreed prefix:
 
 `event` is a required, developer-defined string. `data` is optional domain-specific JSON.
 
-The execution wrapper attaches timestamp, agent ID, work-item ID, and attempt ID where applicable. It also records execution started, succeeded, and failed events.
+The harness attaches timestamp, agent ID, work-item ID, and attempt ID where applicable. It also records execution started, succeeded, and failed events.
 
 These events support a common activity timeline and grouping by event name. The specification does not require progress percentages or interpretation of domain-specific event meaning.
 
@@ -126,7 +126,7 @@ Different agents may have active cycles simultaneously.
 
 ## Claims
 
-The execution wrapper always acquires an internal work-item claim before invoking an optional external claim hook.
+The harness always acquires an internal work-item claim before invoking an optional external claim hook.
 
 Only one valid internal claim may exist for an agent and work-item ID within the platform’s coordination scope.
 
@@ -144,7 +144,7 @@ External coordination may be best effort. A shared label, for example, does not 
 
 ### Acquisition
 
-`claim.sh acquire` receives the work-item envelope on stdin. The execution wrapper also supplies the attempt ID.
+`claim.sh acquire` receives the work-item envelope on stdin. The harness also supplies the attempt ID.
 
 A successful acquisition returns:
 
@@ -168,11 +168,11 @@ If acquisition returns `busy`, execution is skipped and the internal claim is re
 
 If acquisition times out, exits nonzero, or returns invalid output:
 
-- The execution wrapper must not invoke `run`.
-- The execution wrapper must not retry acquisition within that attempt.
+- The harness must not invoke `run`.
+- The harness must not retry acquisition within that attempt.
 - Remaining hook execution must be terminated before the internal claim is released.
-- The execution wrapper records the acquisition failure.
-- Without a valid ownership token, the execution wrapper does not call external release.
+- The harness records the acquisition failure.
+- Without a valid ownership token, the harness does not call external release.
 
 External changes may have occurred despite failure. Recovery of abandoned external claims belongs to the hook implementer and may use expiration or manual cleanup.
 
@@ -180,14 +180,14 @@ External changes may have occurred despite failure. Recovery of abandoned extern
 
 Renewal receives the work item and ownership token, with the same attempt ID available.
 
-The execution wrapper renews claims while execution is active.
+The harness renews claims while execution is active.
 
 External renewal has two semantic outcomes:
 
 - Renewed: supplies a new lease duration.
-- Lost: ownership is gone, so the execution wrapper immediately attempts to stop the run.
+- Lost: ownership is gone, so the harness immediately attempts to stop the run.
 
-A nonzero exit means renewal could not be confirmed. The execution wrapper may retry while the existing lease remains valid. If the lease expires, the execution wrapper attempts to stop the run.
+A nonzero exit means renewal could not be confirmed. The harness may retry while the existing lease remains valid. If the lease expires, the harness attempts to stop the run.
 
 Ownership loss does not guarantee immediate cessation of execution. Stale execution may overlap a later attempt.
 
@@ -195,7 +195,7 @@ Ownership loss does not guarantee immediate cessation of execution. Stale execut
 
 Release receives the work item and ownership token, with the same attempt ID available.
 
-After a run exits, successfully or otherwise, the execution wrapper calls external release before releasing its internal claim.
+After a run exits, successfully or otherwise, the harness calls external release before releasing its internal claim.
 
 Exit zero means released or already gone. Nonzero means cleanup failed.
 
@@ -216,6 +216,6 @@ The agreed defaults are:
 
 These are configurable platform defaults; run timeout can be overridden per agent.
 
-On timeout, the execution wrapper attempts termination and records failure. After the termination period, it forcibly terminates the relevant execution environment.
+On timeout, the harness attempts termination and records failure. After the termination period, it forcibly terminates the relevant execution environment.
 
 Claims are retained during shutdown rather than deliberately released while execution is still terminating. Ownership may nevertheless expire or be lost.

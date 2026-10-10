@@ -7,7 +7,7 @@ import { Code } from '@astrojs/starlight/components';
 import discover from '../../../examples/uppercase/discover.sh?raw';
 import run from '../../../examples/uppercase/run.sh?raw';
 
-An agent is two scripts: **discover work, then handle one item**. You define what needs doing and make execution safe to repeat. The platform’s scheduler decides when to trigger a cycle. Its execution wrapper calls your scripts and handles the execution contract. See [terminology](./terminology/) for these distinct roles.
+An agent is two scripts: **discover work, then handle one item**. You define what needs doing and make execution safe to repeat. The platform’s scheduler decides when to trigger a cycle. Its harness calls your scripts and handles the execution contract. See [terminology](./terminology/) for these distinct roles.
 
 :::note[Discussion draft]
 Start with the working example below, then read the [contract reference](./reference/) and [sequence diagram](./sequence/). [Unresolved details](./gaps/) remain open. This example illustrates the contract; its filenames, dependencies, and domain logic are not new specification requirements.
@@ -57,7 +57,7 @@ The first run also emits this domain event on stderr:
 @agent {"event":"document.uppercased"}
 ```
 
-This is a **local script demonstration**, not an execution-wrapper implementation. It has one possible work item and does not implement platform claims, scheduling, timeouts, or general discovery validation. It does not invent a wire format for supplying the discovery limit, which remains unresolved. Returning at most one item stays within any positive configured limit.
+This is a **local script demonstration**, not an harness implementation. It has one possible work item and does not implement platform claims, scheduling, timeouts, or general discovery validation. It does not invent a wire format for supplying the discovery limit, which remains unresolved. Returning at most one item stays within any positive configured limit.
 
 ## The complete scripts
 
@@ -110,7 +110,7 @@ The input and output here live in one local filesystem. The example does not ass
 | `agent.yaml` | Optional when the application supplies defaults; select a named image or override agreed settings. |
 | `claim.sh` | Optional external coordination. The platform always keeps its own internal claiming mechanism. |
 
-You do not need a custom claim hook to start. The execution wrapper validates discovery, coordinates claims, applies concurrency and timeout limits, and records outcomes. The platform skips scheduled wake-ups while a cycle is active. One failed run does not cancel the others.
+You do not need a custom claim hook to start. The harness validates discovery, coordinates claims, applies concurrency and timeout limits, and records outcomes. The platform skips scheduled wake-ups while a cycle is active. One failed run does not cancel the others.
 
 ## Connect it to the platform
 

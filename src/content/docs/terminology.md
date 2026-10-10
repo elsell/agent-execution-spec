@@ -9,15 +9,15 @@ An **application** groups repository configuration and agents. An **agent** is t
 
 | Term | Meaning in this specification |
 | --- | --- |
-| **Scheduler** | The platform-owned component responsible for when an agent cycle is triggered. It invokes the execution wrapper. Scheduling may use cron, a Go program, a Windows service, or another implementation. |
-| **Execution wrapper** | The platform-owned component invoked by the scheduler to execute an agent cycle. It calls `discover.sh`, validates discovery output, coordinates claims and concurrent `run.sh` invocations, applies timeouts and cleanup, and integrates with platform events, logging, and retention. |
-| **Platform** | The broader system that provides the scheduler, execution wrapper, and supporting capabilities. |
+| **Scheduler** | The platform-owned component responsible for when an agent cycle is triggered. It invokes the harness. Scheduling may use cron, a Go program, a Windows service, or another implementation. |
+| **Harness** | The platform-owned component invoked by the scheduler to execute an agent cycle. It calls `discover.sh`, validates discovery output, coordinates claims and concurrent `run.sh` invocations, applies timeouts and cleanup, and integrates with platform events, logging, and retention. |
+| **Platform** | The broader system that provides the scheduler, harness, and supporting capabilities. |
 
-**Execution wrapper** is the term used throughout this specification. “Run harness” describes the same role, rather than another component. The wrapper is supplied by the platform; the developer supplies the agent scripts that it invokes.
+**Harness** is the term used throughout this specification. The harness is supplied by the platform; the developer supplies the agent scripts that it invokes.
 
-These are distinct responsibilities, not a requirement for separate services, processes, or executables. A wrapper script is one possible implementation. The scheduling technology and the wrapper's implementation language remain unspecified.
+These are distinct responsibilities, not a requirement for separate services, processes, or executables. A harness script is one possible implementation. The scheduling technology and the harness's implementation language remain unspecified.
 
-The relationship is: **scheduler → execution wrapper → developer-provided agent scripts**. The wrapper carries out a cycle; it is not the agent definition or an individual `run.sh` invocation.
+The relationship is: **scheduler → harness → developer-provided agent scripts**. The harness carries out a cycle; it is not the agent definition or an individual `run.sh` invocation.
 
 ## Application, agent, and cycle
 
@@ -60,6 +60,6 @@ An internal claim is distinct from exclusive ownership of the whole agent cycle.
 
 ## Example of the language
 
-> An application points to a repository containing an uppercase agent. On a scheduled wake-up, the scheduler invokes the execution wrapper to carry out an agent cycle. The wrapper calls `discover.sh`, which returns the item `message`. The wrapper validates discovery output, acquires the internal claim, invokes `run.sh`, records the attempt's outcome through the platform's observability systems, and releases the claim. The cycle ends when its work and cleanup have settled.
+> An application points to a repository containing an uppercase agent. On a scheduled wake-up, the scheduler invokes the harness to carry out an agent cycle. The harness calls `discover.sh`, which returns the item `message`. The harness validates discovery output, acquires the internal claim, invokes `run.sh`, records the attempt's outcome through the platform's observability systems, and releases the claim. The cycle ends when its work and cleanup have settled.
 
 The platform ensures that a scheduled wake-up during an active cycle is skipped without queueing a later cycle. These names do not change that guarantee or resolve the open questions about cycle recovery.
