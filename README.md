@@ -4,6 +4,7 @@ Discussion draft defining the execution contract for agents exposing `discover.s
 
 - [Read the published specification](https://elsell.github.io/agent-execution-spec/)
 - [Developer guide](src/content/docs/index.mdx)
+- [Terminology and naming discussion](src/content/docs/terminology.md)
 - [Contract reference](src/content/docs/reference.md)
 - [Runnable example](examples/uppercase)
 - [Sequence diagram](src/content/docs/sequence.md)

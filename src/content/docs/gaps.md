@@ -5,6 +5,7 @@ description: Open questions deliberately left unresolved in the conversation dra
 
 These are not additional requirements:
 
+- Whether to adopt “orchestrator” for the execution-coordination role; see the [terminology discussion](../terminology/).
 - Exact application schema, configuration field names beyond those shown, and default discovery interval and concurrency.
 - Stable agent identity and coordination scope, including behavior across repository changes or multiple application registrations.
 - Exact environment-variable names and how discovery receives its item limit.
