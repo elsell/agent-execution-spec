@@ -17,7 +17,7 @@ Start with the working example below, then read the [contract reference](./refer
 
 This agent turns `message.txt` into an uppercase file at `generated/MESSAGE.txt`. It discovers work only when that output is missing or differs from the desired result. Once handled, discovery returns nothing. Repeating the same run leaves the result unchanged.
 
-The example requires **Bash and Python 3**, with no additional packages, service accounts, or credentials. The files are included in [examples/uppercase](https://github.com/elsell/agent-execution-spec/tree/main/examples/uppercase).
+The scripts are **Bash**, using **jq** for JSON and standard command-line tools (`tr`, `cmp`, `mkdir`, `mktemp`, `mv`, and `rm`). They need no service accounts or credentials. The transformation uppercases ASCII letters. The files are included in [examples/uppercase](https://github.com/elsell/agent-execution-spec/tree/main/examples/uppercase).
 
 ```text
 examples/uppercase/
@@ -54,7 +54,7 @@ HELLO, AGENTS!
 The first run also emits this domain event on stderr:
 
 ```text
-@agent {"event": "document.uppercased", "data": {"path": "generated/MESSAGE.txt"}}
+@agent {"event":"document.uppercased"}
 ```
 
 This is a **local script demonstration**, not an orchestrator implementation. It has one possible work item and does not implement platform claims, scheduling, timeouts, or general discovery validation. It does not invent a wire format for supplying the discovery limit, which remains unresolved. Returning at most one item stays within any positive configured limit.
@@ -63,13 +63,19 @@ This is a **local script demonstration**, not an orchestrator implementation. It
 
 ### Discover what is ready
 
-Discovery only reads files. It emits one envelope containing an opaque work ID and the text to process. This example chooses a content hash as its ID; the contract does not require that choice.
+Discovery compares the desired output with the existing file. If work is needed, it returns a fixed ID and the source filename:
+
+```json
+{"id":"message","data":{"source":"message.txt"}}
+```
+
+The ID identifies the document. It can appear again when the document needs updating; this example does not create a new ID for every revision.
 
 <Code code={discover} lang="bash" title="discover.sh" />
 
 ### Handle one item safely
 
-Execution receives that envelope on stdin. It exits successfully if the source has disappeared or changed since discovery, or if the desired output already exists. Otherwise it replaces the output through a temporary file and emits an event.
+Execution reads the source filename with `jq`, checks that it is the expected file, and processes its current contents. If the source is gone or the output is already correct, it exits successfully. Otherwise it writes through a temporary file, replaces the result, and emits an event. The temporary file prevents an interrupted write from leaving a partial result.
 
 <Code code={run} lang="bash" title="run.sh" />
 
@@ -116,4 +122,4 @@ If the application defines an image named `worker`, this optional file selects i
 image: worker
 ```
 
-For this example, that image would need Bash and Python 3. The full application schema and deployment wiring are deliberately not invented here. Continue to the [contract reference](./reference/) for the agreed behavior and [unresolved details](./gaps/) for what still needs a decision.
+For this example, that image would need Bash, jq, and the command-line tools used above. The full application schema and deployment wiring are deliberately not invented here. Continue to the [contract reference](./reference/) for the agreed behavior and [unresolved details](./gaps/) for what still needs a decision.
