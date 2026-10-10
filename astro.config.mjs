@@ -11,6 +11,6 @@ export default defineConfig({
     editLink: { baseUrl: 'https://github.com/elsell/agent-execution-spec/edit/main/' },
     sidebar: [{ label: 'Start here', slug: '' }, { label: 'Terminology', slug: 'terminology' }, { label: 'Contract reference', slug: 'reference' }, { label: 'Sequence diagram', slug: 'sequence' }, { label: 'Unresolved details', slug: 'gaps' }],
     customCss: ['./src/styles/custom.css'],
-    components: { Head: './src/components/Head.astro' },
+    components: { Head: './src/components/Head.astro', Header: './src/components/Header.astro' },
   })],
 });

@@ -2,6 +2,11 @@
 import Default from '@astrojs/starlight/components/Head.astro';
 ---
 <Default {...Astro.props} />
+<script is:inline>
+  try {
+    document.documentElement.toggleAttribute('data-sidebar-collapsed', localStorage.getItem('agent-spec-sidebar-collapsed') === 'true');
+  } catch {}
+</script>
 <script>
   import mermaid from 'mermaid';
   async function renderDiagrams() {

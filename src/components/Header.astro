@@ -1,0 +1,37 @@
+---
+import Default from '@astrojs/starlight/components/Header.astro';
+---
+<div class="site-header">
+  <button id="sidebar-toggle" type="button" aria-controls="starlight__sidebar" aria-expanded="true" aria-label="Collapse sidebar" title="Collapse sidebar">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M9 4v16" />
+    </svg>
+  </button>
+  <div class="default-header"><Default {...Astro.props} /></div>
+</div>
+<script>
+  const button = document.getElementById('sidebar-toggle');
+  function updateButton() {
+    const collapsed = document.documentElement.hasAttribute('data-sidebar-collapsed');
+    const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    button?.setAttribute('aria-expanded', String(!collapsed));
+    button?.setAttribute('aria-label', label);
+    button?.setAttribute('title', label);
+  }
+  updateButton();
+  button?.addEventListener('click', () => {
+    const collapsed = document.documentElement.toggleAttribute('data-sidebar-collapsed');
+    try { localStorage.setItem('agent-spec-sidebar-collapsed', String(collapsed)); } catch {}
+    updateButton();
+  });
+</script>
+<style>
+  .site-header { display: flex; align-items: center; height: 100%; gap: .75rem; }
+  .default-header { flex: 1; min-width: 0; }
+  #sidebar-toggle { display: none; align-items: center; justify-content: center; flex: 0 0 auto; width: 2.5rem; height: 2.5rem; color: var(--sl-color-text); background: transparent; border: 1px solid var(--sl-color-gray-5); border-radius: .35rem; cursor: pointer; }
+  #sidebar-toggle:hover { background: var(--sl-color-gray-6); }
+  #sidebar-toggle:focus-visible { outline: 2px solid var(--sl-color-text-accent); outline-offset: 3px; }
+  @media (min-width: 50rem) { #sidebar-toggle { display: inline-flex; } }
+  @media print { #sidebar-toggle { display: none; } }
+</style>
