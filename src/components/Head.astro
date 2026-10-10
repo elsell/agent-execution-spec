@@ -1,0 +1,21 @@
+---
+import Default from '@astrojs/starlight/components/Head.astro';
+---
+<Default {...Astro.props} />
+<script>
+  import mermaid from 'mermaid';
+  async function renderDiagrams() {
+    const blocks = document.querySelectorAll('pre[data-language="mermaid"], pre:has(code.language-mermaid)');
+    if (!blocks.length) return;
+    mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'neutral', sequence: { useMaxWidth: false } });
+    for (const block of blocks) {
+      const target = document.createElement('div');
+      target.className = 'mermaid';
+      target.textContent = block.querySelector('code')?.textContent || block.textContent;
+      const container = block.closest('.expressive-code') || block;
+      container.replaceWith(target);
+    }
+    await mermaid.run({ querySelector: '.mermaid' });
+  }
+  renderDiagrams();
+</script>

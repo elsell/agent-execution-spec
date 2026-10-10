@@ -1,0 +1,5 @@
+:root { --sl-color-accent-low: #102f35; --sl-color-accent: #16868c; --sl-color-accent-high: #a3e4df; --sl-content-width: 52rem; }
+:root[data-theme='light'] { --sl-color-accent-low: #def4f1; --sl-color-accent: #087c80; --sl-color-accent-high: #124d53; }
+.mermaid { overflow-x: auto; padding: 1.5rem; background: #fff; border: 1px solid #d8e1e2; border-radius: .6rem; }
+.mermaid svg { min-width: 850px; }
+@media print { header, nav, .sidebar, .right-sidebar, .pagination-links, starlight-menu-button { display: none !important; } .main-frame { padding: 0 !important; } .content-panel { padding: 0 !important; } .mermaid { overflow: visible; padding: 0; border: 0; } .mermaid svg { min-width: 0; width: 100%; height: auto; } }

@@ -1,0 +1,7 @@
+{
+  "name": "agent-execution-spec",
+  "private": true,
+  "type": "module",
+  "scripts": {"dev": "astro dev", "build": "astro build", "preview": "astro preview"},
+  "dependencies": {"astro": "^5.13.0", "@astrojs/starlight": "^0.35.0", "mermaid": "^11.12.0"}
+}
