@@ -15,7 +15,7 @@ An **application** groups repository configuration and agents. An **agent** is t
 
 **Execution harness** is the term used throughout this specification. The execution harness is supplied by the platform; the developer supplies the agent scripts that it invokes.
 
-These are distinct responsibilities, not a requirement for separate services, processes, or executables. A execution harness script is one possible implementation. The scheduling technology and the execution harness's implementation language remain unspecified.
+These are distinct responsibilities, not a requirement for separate services, processes, or executables. An execution harness script is one possible implementation. The scheduling technology and the execution harness's implementation language remain unspecified.
 
 The relationship is: **scheduler → execution harness → developer-provided agent scripts**. The execution harness carries out a cycle; it is not the agent definition or an individual `run.sh` invocation.
 
