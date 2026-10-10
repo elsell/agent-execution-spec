@@ -3,12 +3,12 @@ title: Sequence diagram
 description: The agent cycle from a scheduled wake-up through discovery, claims, execution, and cleanup.
 ---
 
-This diagram shows the accepted discovery path and per-item processing. The scheduler and harness are platform-owned; the agent scripts are developer-provided. The harness integrates with the platform’s event and log systems. Failure behavior is defined in the specification. Items can execute concurrently; the loop represents each item's lifecycle rather than requiring serial execution.
+This diagram shows the accepted discovery path and per-item processing. The scheduler and execution harness are platform-owned; the agent scripts are developer-provided. The execution harness integrates with the platform’s event and log systems. Failure behavior is defined in the specification. Items can execute concurrently; the loop represents each item's lifecycle rather than requiring serial execution.
 
 ```mermaid
 sequenceDiagram
     participant S as Scheduler
-    participant P as Harness
+    participant P as Execution harness
     participant D as discover.sh
     participant C as claim.sh (optional)
     participant R as run.sh
@@ -18,7 +18,7 @@ sequenceDiagram
     alt Agent cycle already active
         S->>S: Skip wake-up, do not queue
     else No active cycle
-        S->>P: Invoke harness
+        S->>P: Invoke execution harness
         P->>P: Establish exclusive agent cycle
         P->>D: Execute with item limit
         D-->>P: JSON lines and exit status
